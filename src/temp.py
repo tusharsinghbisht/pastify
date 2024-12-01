@@ -20,7 +20,6 @@ server.listen(1)
 server_thread = threading.Thread(target=server_function, args=(server,))
 server_thread.start()
 
-# Simulate shutdown after 5 seconds
 time.sleep(5)
 print("Shutting down server...")
 server.shutdown(socket.SHUT_RDWR)
