@@ -4,6 +4,7 @@ from .handler import Request, Response
 from .error import *
 from utils.message import message
 from functools import wraps
+import threading
 
 class Pastify:
     '''
@@ -35,43 +36,66 @@ class Pastify:
                 return handler(*args, **kwargs)
             return wrapper
         return decorator
+    
+    def search_route_param(self, url):
+        if url in self.route_map.keys():
+            return (url, {})
 
-    def handleRequest(self, path, client_socket, method):
+        og_url = url.split("/")
+
+        for route in self.route_map.keys():
+            this_url = route.split("/")
+            print(route,this_url)
+            if len(og_url) == len(this_url) and og_url[0:-1] == this_url[0:-1] and this_url[-1][0] == ":":
+                print(og_url)
+                return (route, { this_url[-1][1:]: og_url[-1] })
+
+        raise KeyError
+    
+    
+
+    def handleRequest(self, req: Request):
         try:
-            handler, allowed_methods = self.route_map[path]
+            res = Response(req)
 
-            if method not in allowed_methods:
+            route, params = self.search_route_param(req.base_url)
+            req.params = params
+            handler, allowed_methods = self.route_map[route]
+
+            if req.method not in allowed_methods:
                 raise MethodNotAllowed(allowed_methods)
 
-            handler(client_socket)
+            # handler(req, res)
+            handler(req, res)
 
             message.blue("Response Sent")
 
         except MethodNotAllowed:
-            res = "HTTP/1.1 405 Method Not Allowed\n\n<h1>Method Not Allowed</h1><p>The method you are using to access the resource is not allowed</p>"
+            res.status(405)
+            res.message("Method not allowed")
+            res.send("<h1>Method Not Allowed</h1><p>The method you are using to access the resource is not allowed</p>")
             message.red("RESPONSE sent: Method not allowed")
-            client_socket.sendall(res.encode())
-            client_socket.close()
 
         except KeyError:
-            res = "HTTP/1.1 404 Resource not found\n\n<h1>Resource not found</h1><p>The resource you are trying to access is not available</p>"
+            res.status(404)
+            res.message("Resource not found")
+            res.send("<h1>Resource not found</h1><p>The resource you are trying to access is not available</p>")
             message.red("RESPONSE sent: Resource not found")
-            client_socket.sendall(res.encode())
-            client_socket.close()
 
             # create a Request, Response class to check inter package imports
 
 
     def mainloop(self):
-        client_socket, client_address = self.server_socket.accept()
-        req = client_socket.recv(1500).decode()
-        headers = req.split("\n")
-        
-        method, path, http_version = headers[0].split()
-
-        message.cyan(f"Incoming REQUEST: {path} [{method}]")
-        
-        self.handleRequest(path, client_socket, method)
+        try:
+            client_socket, client_address = self.server_socket.accept()
+            req = Request(client_socket)
+            # print(req)
+            
+            print(f"\nIncoming REQUEST: {req.url} [{req.method}]")
+            
+            self.handleRequest(req)
+        except OSError:
+            pass
 
         # if method == "GET":
         #     if path == "/":
@@ -97,16 +121,15 @@ class Pastify:
         
         while self.is_running:
             self.mainloop()
-            print(self.is_running)
+            # loop = threading.Thread(target=self.mainloop())
+            # loop.start()
+            
+        # print("shut down triggerd")
 
     def shutdown(self):
         self.is_running = False
-        self.server_socket.close()
-
-        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_address = (self.hostname, self.port)
-        client.connect(server_address)
-        client.sendall("GET /temp HTTP/1.1")
-        client.close()
-        # shutdown watcher and server upon change in file , later instead of shutdown making it restart project
-        
+        try:
+            self.server_socket.shutdown(socket.SHUT_RDWR)
+            self.server_socket.close()
+        except OSError:
+            pass

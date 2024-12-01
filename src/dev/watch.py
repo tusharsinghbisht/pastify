@@ -7,9 +7,10 @@ from utils import message
 BASE = "./src"
 
 class Watcher:
-    def __init__(self, app: Pastify):
+    def __init__(self, app: Pastify, file):
         self.app = app
         self.watching = True
+        self.file = file
 
     def get_all_files(self, dir):
         files = []
@@ -33,7 +34,7 @@ class Watcher:
 
                 if curr_time != last_mtime[file]:
                     last_mtime[file] = curr_time
-                    message.blue(f"Changes detected in file {file}... restarting...")
+                    print(f"\nChanges detected in file {file}... restarting...")
                     self.restart()
 
             time.sleep(interval)
@@ -50,14 +51,18 @@ class Watcher:
         
         self.server.start()
 
-        self.watcher.join()
-        print("watcher stopped")
-
         self.server.join()
-        print("server stop")
+        message.red("\n• Server Socket Stopped")
+
+        self.watcher.join()
+        message.red("• Watcher stopped")
+
+        message.green("\n✔ Restarting...\n")
+
+        
+        os.execv("/usr/bin/python3", ["python"]+[self.file])
+
 
     def restart(self):
         self.watching = False
-        time.sleep(5)
-        print("tmkoc")
         self.app.shutdown()
