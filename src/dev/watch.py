@@ -41,26 +41,30 @@ class Watcher:
 
     
     def listen(self, callback):
+        try:
+            self.server = threading.Thread(target=self.app.listen, args=(callback,))
+            self.watcher = threading.Thread(target=self.watch, args=(BASE,))
 
-        self.server = threading.Thread(target=self.app.listen, args=(callback,))
-        self.watcher = threading.Thread(target=self.watch, args=(BASE,))
+            message.green("Starting app in watch mode... Listening to changes...")
 
-        message.green("Starting app in watch mode... Listening to changes...")
+            self.watcher.start()
+            
+            self.server.start()
 
-        self.watcher.start()
-        
-        self.server.start()
+            self.server.join()
+            message.red("\n• Server Socket Stopped")
 
-        self.server.join()
-        message.red("\n• Server Socket Stopped")
+            self.watcher.join()
+            message.red("• Watcher stopped")
 
-        self.watcher.join()
-        message.red("• Watcher stopped")
+            message.green("\n✔ Restarting...\n")
 
-        message.green("\n✔ Restarting...\n")
-
-        
-        os.execv("/usr/bin/python3", ["python"]+[self.file])
+            
+            os.execv("/usr/bin/python3", ["python"]+[self.file])
+        except KeyboardInterrupt:
+            message.red("\nServer stopped by user...")
+            self.watching = False
+            exit()
 
 
     def restart(self):

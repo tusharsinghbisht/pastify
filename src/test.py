@@ -17,10 +17,19 @@ def xyz(req, res):
     res.send("<h1>ek galeech xyz route</h1>")
 
 
-@app.route(path="/boy/:id", allowed_methods=["GET"])
+@app.route(path="/boy", allowed_methods=["GET"])
+def xyz(req, res):
+    res.send(f"<h1>galeech boy</h1>")
+
+
+@app.route(path="/boy/:m/:q", allowed_methods=["GET"])
+def xyz(req, res):
+    res.send(f"<h1>galeech boy {req.params}</h1>")
+
+@app.route(path="/:page", allowed_methods=["GET"])
 def xyz(req, res):
     print(req.params)
-    res.send(f"<h1>galeech boy {req.params["id"]}</h1>")
+    res.send(f"<h1>{req.params["page"]} + {req.query}</h1>")
 
 watcher = Watcher(app, __file__)
 

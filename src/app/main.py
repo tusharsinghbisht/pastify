@@ -4,7 +4,7 @@ from .handler import Request, Response
 from .error import *
 from utils.message import message
 from functools import wraps
-import threading
+
 
 class Pastify:
     '''
@@ -30,7 +30,7 @@ class Pastify:
 
     def route(self, path,  allowed_methods):
         def decorator(handler):
-            self.route_map[path] = [handler, allowed_methods]
+            self.route_map[path] = [handler, allowed_methods, any([v[0] == ":" for v in path.split("/") if v ])]
             @wraps(handler)
             def wrapper(*args, **kwargs):
                 return handler(*args, **kwargs)
@@ -38,19 +38,33 @@ class Pastify:
         return decorator
     
     def search_route_param(self, url):
-        if url in self.route_map.keys():
+        url = url[0] + url.strip("/")  # remove extra / from left and right
+        # if url in route_map and route doesn't have any params
+        if url in self.route_map.keys() and not self.route_map[url][2]:
             return (url, {})
 
-        og_url = url.split("/")
+        url_tokens = [v for v in url.split("/") if v]
 
         for route in self.route_map.keys():
-            this_url = route.split("/")
-            print(route,this_url)
-            if len(og_url) == len(this_url) and og_url[0:-1] == this_url[0:-1] and this_url[-1][0] == ":":
-                print(og_url)
-                return (route, { this_url[-1][1:]: og_url[-1] })
+            curr_url_tokens = [v for v in route.split("/") if v]
+            # print(curr_url_tokens, url_tokens)
 
-        raise KeyError
+            if not self.route_map[route][2]:
+                if curr_url_tokens == url_tokens:
+                    return (route, {})
+            else:
+                ret = True
+                if len(url_tokens) == len(curr_url_tokens):
+                    params = {}
+                    for x, y in zip(url_tokens, curr_url_tokens):
+                        if y[0] == ":":
+                            params[y[1:]] = x
+                        elif x != y:
+                            ret = False
+                    if ret:
+                        return (route, params)
+
+        raise RouteNotFound(url)
     
     
 
@@ -59,8 +73,8 @@ class Pastify:
             res = Response(req)
 
             route, params = self.search_route_param(req.base_url)
+            handler, allowed_methods, is_param = self.route_map[route]
             req.params = params
-            handler, allowed_methods = self.route_map[route]
 
             if req.method not in allowed_methods:
                 raise MethodNotAllowed(allowed_methods)
@@ -76,7 +90,7 @@ class Pastify:
             res.send("<h1>Method Not Allowed</h1><p>The method you are using to access the resource is not allowed</p>")
             message.red("RESPONSE sent: Method not allowed")
 
-        except KeyError:
+        except RouteNotFound as e:
             res.status(404)
             res.message("Resource not found")
             res.send("<h1>Resource not found</h1><p>The resource you are trying to access is not available</p>")
@@ -94,6 +108,9 @@ class Pastify:
             print(f"\nIncoming REQUEST: {req.url} [{req.method}]")
             
             self.handleRequest(req)
+
+        except KeyboardInterrupt:
+            print("Server Stopped by user..")
         except OSError:
             pass
 
