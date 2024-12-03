@@ -4,7 +4,7 @@ from app import Pastify
 import threading
 from utils import message
 
-BASE = "./src"
+BASE = "./pastify"
 
 class Watcher:
     def __init__(self, app: Pastify, file):
