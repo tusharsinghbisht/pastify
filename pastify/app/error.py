@@ -11,3 +11,17 @@ class MethodNotAllowed(Exception):
 class RouteNotFound(Exception):
     def __init__(self, route):
         super().__init__(f"The resource {route} you are trying to access is unavailable")
+
+class FileNotExist(Exception):
+    def __init__(self):
+        super().__init__(f"The file you are trying to access is unavailable")
+
+class InternalServerError(Exception):
+    def __init__(self, message="Internal server error occurred"):
+        super().__init__(message)
+
+
+class TemplateError(Exception):
+    def __init__(self, message="Invalid template", status_code=404):
+        super().__init__(message)
+        self.status_code = status_code

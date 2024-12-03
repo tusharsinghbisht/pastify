@@ -4,7 +4,7 @@ from .handler import Request, Response
 from .error import *
 from utils.message import message
 from functools import wraps
-
+from .RESPONSES import *
 
 class Pastify:
     '''
@@ -82,19 +82,32 @@ class Pastify:
             # handler(req, res)
             handler(req, res)
 
-            message.blue("Response Sent")
+            if not res.sent:
+                raise InternalServerError
+            message.blue(f"Response Sent: {res.getStatus()}")
+
+        except InternalServerError:
+            res.status(500)
+            res.message("Internal server error")
+            res.send(INTERNAL_SERVER_ERROR_PAGE)
+            message.red(f"RESPONSE sent: {res.getStatus()}")
 
         except MethodNotAllowed:
             res.status(405)
             res.message("Method not allowed")
-            res.send("<h1>Method Not Allowed</h1><p>The method you are using to access the resource is not allowed</p>")
-            message.red("RESPONSE sent: Method not allowed")
+            res.send(METHOD_NOT_ALLOWED_PAGE)
+            message.red(f"RESPONSE sent: {res.getStatus()}")
 
-        except RouteNotFound as e:
+        except (RouteNotFound,FileNotExist):
             res.status(404)
             res.message("Resource not found")
-            res.send("<h1>Resource not found</h1><p>The resource you are trying to access is not available</p>")
-            message.red("RESPONSE sent: Resource not found")
+            res.send(NOT_FOUND_PAGE)
+            message.red(f"RESPONSE sent: {res.getStatus()}")
+        except TemplateError as e:
+            res.status(e.status_code)
+            res.message(e)
+            res.send(TEMPLATE_ERROR_PAGE(e))
+            message.red(f'RESPONSE sent: {res.getStatus()}')
 
             # create a Request, Response class to check inter package imports
 

@@ -27,12 +27,11 @@ class Watcher:
     
     def watch(self, dir=".", interval=1):
         last_mtime = { f: os.path.getmtime(f) for f in self.get_all_files(dir) }
-
         while self.watching:
             for file in last_mtime.keys():
                 curr_time = os.path.getmtime(file)
 
-                if curr_time != last_mtime[file]:
+                if curr_time != last_mtime.get(file, None):
                     last_mtime[file] = curr_time
                     print(f"\nChanges detected in file {file}... restarting...")
                     self.restart()
