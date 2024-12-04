@@ -1,9 +1,15 @@
-import urllib.parse
 from app import Pastify
 from utils import message
 from dev import Watcher
+from middleware import parseJSON
+from routes import adminRouter
 
 app = Pastify()
+
+app.useStatic()
+app.use(parseJSON)
+
+app.useRouter(adminRouter)
 
 @app.route(path="/", allowed_methods=["GET", "POST"])
 def home(req, res):
@@ -16,7 +22,7 @@ def xyz(req, res):
     res.send("<h1>ek galeech xyz route</h1>")
 
 
-@app.route(path="/boy", allowed_methods=["GET"])
+@app.route(path="/boy", allowed_methods=["GET"], middlewares=[lambda r,s: print("boy wala route")])
 def xyz(req, res):
     res.send(f"<h1>galeech boy</h1>")
 
@@ -36,10 +42,6 @@ def xyz(req, res):
     else:
         return res.send(f"<h1>{req.params["page"]} + {req.query}</h1>")
     
-@app.route(path="/static/:file", allowed_methods=["GET"])
-def xyz(req, res):
-    file = req.params["file"]
-    res.fsend("public/"+file)
     
     
 @app.route(path="/te", allowed_methods=["GET"])
@@ -50,6 +52,7 @@ def xyz(req, res):
     
 @app.route(path="/head", allowed_methods=["GET"])
 def xyz(req, res):
+    res.setCookie("oo", "abc", 3600)
     res.send("ye headers testing ke liye hai")
 
     
@@ -57,6 +60,11 @@ def xyz(req, res):
 @app.route(path="/red", allowed_methods=["GET"])
 def xyz(req, res):
     res.redirect("/te")
+    
+@app.route(path="/submit", allowed_methods=["POST"])
+def xyz(req, res):
+    # print(req.body)
+    res.send("form submitted")
     
     
 watcher = Watcher(app, __file__)

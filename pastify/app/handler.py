@@ -13,19 +13,26 @@ class Request:
     def __init__(self, socket: socket.socket):
         self.socket = socket
         self.data = socket.recv(1500).decode()
-        self.headers = self.data.split("\n")
+        data_split = self.data.split("\r\n")
+        self.headers = data_split[0:data_split.index('')]
         self.method, self.url, self.http_version = self.headers[0].split()
-        
         self.url = unquote(self.url)
         self.base_url = self.url.split("?")[0]
 
         self.headers = self.headers[1:]
-        self.headers = { x[:x.find(':')]: x[x.find(":")+2:] for x in self.headers if x.strip() != "" } 
+        self.headers = { x[:(_:=x.find(':'))].strip(): x[_+1:].strip() for x in self.headers if x.strip() != "" } 
+        self.host = ""
+        self.user_agent = ""
+        self.cookies = ""
 
-        self.host = self.headers["Host"]
-        self.user_agent = self.headers["User-Agent"]
+        if "Host" in self.headers:
+            self.host = self.headers["Host"]
+        if "User-Agent" in self.headers:
+            self.user_agent = self.headers["User-Agent"]
+        if "Cookie" in self.headers:
+            self.cookies = { c[:(_:=c.find("="))].strip(): c[_+1:].strip() for c in self.headers["Cookie"].split(";") } 
 
-        self.body = self.data.split("\r\n")[-1]
+        self.body = "\r\n".join(data_split[data_split.index('')+1:])
 
         self.query = { x[:x.find("=")]:x[x.find("=")+1:] for x in self.url[1:].split('?') if "=" in x and x.strip() != ""}
         
@@ -44,6 +51,7 @@ class Response:
         self.headers = {
             "Content-Type": "text/html; charset=UTF-8"
         }
+        self.cookies = {}
 
     def status(self, code):
         self.status_code = code
@@ -56,6 +64,11 @@ class Response:
                 self.headers[k] = v
         else:
             raise InternalServerError("Invalid values for headers")
+        
+    def setCookie(self, key, value, max_age, path="/", http_only=True, secure=False, samesite="Strict"):
+        http_only_text = "httponly;" if http_only else ""
+        secure_text = "secure;" if secure else ""
+        self.headers["Set-Cookie"] = f"{key}={value}; Max-Age={max_age}; path={path}; {http_only_text} {secure_text} SameSite={samesite}"
 
     def getStatus(self):
         return f"{self.status_code} {self.status_message}"
@@ -64,7 +77,6 @@ class Response:
         headers_str = ""
         for k, v in self.headers.items():
             headers_str += f"{k}: {v}\n"
-
         return headers_str
 
     def send(self, text: str):

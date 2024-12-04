@@ -6,8 +6,14 @@
     <title>Document</title>
 </head>
 <body>
-    <h2>{{name}}{{{{data2}}}}</h2>
-    <h2>{{ data }}</h2>
-    <p>{{v}}</p>
+    <h2>h1</h2>
+
+    <form action="/submit" method="POST"> 
+        <input type="text" name="name">
+        <input type="file" name="image">
+        <input type="email" name="email">
+        <textarea name="message"></textarea>
+        <input type="submit" value="Submit">
+    </form>
 </body>
 </html>

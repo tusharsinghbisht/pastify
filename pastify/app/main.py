@@ -5,6 +5,7 @@ from .error import *
 from utils.message import message
 from functools import wraps
 from .RESPONSES import *
+from .router import Router
 
 class Pastify:
     '''
@@ -26,11 +27,15 @@ class Pastify:
         self.port = PORT
         self.route_map = {}
         self.is_running = True
+        self.middlewares = []
+
+    def use(self, middleware):
+        self.middlewares.append(middleware)
 
 
-    def route(self, path,  allowed_methods):
+    def route(self, path,  allowed_methods, middlewares=[]):
         def decorator(handler):
-            self.route_map[path] = [handler, allowed_methods, any([v[0] == ":" for v in path.split("/") if v ])]
+            self.route_map[path] = [handler, allowed_methods, any([v[0] == ":" for v in path.split("/") if v ]), middlewares]
             @wraps(handler)
             def wrapper(*args, **kwargs):
                 return handler(*args, **kwargs)
@@ -73,14 +78,24 @@ class Pastify:
             res = Response(req)
 
             route, params = self.search_route_param(req.base_url)
-            handler, allowed_methods, is_param = self.route_map[route]
+            handler, allowed_methods, is_param, route_middlewares = self.route_map[route]
             req.params = params
 
             if req.method not in allowed_methods:
                 raise MethodNotAllowed(allowed_methods)
+            
+            for middleware in self.middlewares + route_middlewares:
+                if callable(middleware):
+                    if not res.sent:
+                        middleware(req, res)
+                else:
+                    print("Invalid middleware as argument")
+                    raise InternalServerError
+
 
             # handler(req, res)
-            handler(req, res)
+            if not res.sent:
+                handler(req, res)
 
             if not res.sent:
                 raise InternalServerError
@@ -127,22 +142,6 @@ class Pastify:
         except OSError:
             pass
 
-        # if method == "GET":
-        #     if path == "/":
-        #         fin = open("index.html", "r")
-        #         content = fin.read()
-        #         fin.close()
-
-        #         # sending response
-        #         # STATUS LINE
-        #         # HEADERS
-        #         # MESSAGE-BODY
-        #         res = "HTTP/1.1 200 OK\n\n" + content
-        #         client_socket.sendall(res.encode())
-        #         client_socket.close()
-        # else:
-        #     res = "HTTP/1.1 405 Method Not Allowed\n\n<h1>Invalid Method</h1>"
-        #     client_socket.sendall(res.encode())
 
     def listen(self, callback):
         self.server_socket.listen(5)
@@ -153,8 +152,19 @@ class Pastify:
             self.mainloop()
             # loop = threading.Thread(target=self.mainloop())
             # loop.start()
-            
         # print("shut down triggerd")
+
+    def useStatic(self, route="/static", directory="public"):
+        if route == "/":
+            route = ""
+
+        @self.route(path=f"{route}/:file", allowed_methods=["GET"])
+        def static(req, res):
+            file = req.params["file"]
+            res.fsend(f"{directory}/"+file)
+
+    def useRouter(self, router: Router):
+        self.route_map.update(router.route_map)
 
     def shutdown(self):
         self.is_running = False
