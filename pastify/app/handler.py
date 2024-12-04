@@ -41,28 +41,47 @@ class Response:
         self.status_code = 200
         self.status_message = "OK"
         self.sent = False
+        self.headers = {
+            "Content-Type": "text/html; charset=UTF-8"
+        }
 
     def status(self, code):
         self.status_code = code
     def message(self, message):
         self.status_message = message
 
+    def setHeaders(self, hdrs):
+        if isinstance(hdrs, dict):
+            for k, v in hdrs.items():
+                self.headers[k] = v
+        else:
+            raise InternalServerError("Invalid values for headers")
+
     def getStatus(self):
         return f"{self.status_code} {self.status_message}"
+    
+    def getHeaders(self):
+        headers_str = ""
+        for k, v in self.headers.items():
+            headers_str += f"{k}: {v}\n"
+
+        return headers_str
 
     def send(self, text: str):
-        self.socket.sendall(f'{self.req.http_version} {self.getStatus()}\nContent-type: text/html\n\n{text}'.encode())
+        self.setHeaders({ "Content-Length": len(text) })
+        self.socket.sendall(f'{self.req.http_version} {self.getStatus()}\n{self.getHeaders()}\n{text}'.encode())
         self.socket.close()
         self.sent = True
 
     def json(self, dic):
         try:
             json_res = json.dumps(dic)
-            self.socket.sendall(f'{self.req.http_version} {self.getStatus()}\nContent-type: application/json\n\n{json_res}'.encode())
+            self.setHeaders({ "Content-Type": "application/json", "Content-Length": len(json_res) })
+            self.socket.sendall(f'{self.req.http_version} {self.getStatus()}\n{self.getHeaders()}\n{json_res}'.encode())
             self.socket.close()
             self.sent = True
         except TypeError:
-            raise InternalServerError
+            raise InternalServerError("Invalid JSON response")
 
     def fsend(self, fname):
         try:
@@ -78,12 +97,19 @@ class Response:
                 f = open(file_path, "rb")
                 content = f.read()
                 f.close()
-                res = f"{self.req.http_version} {self.getStatus()}\r\nContent-Type: {content_type}\r\nContent-Length: {len(content)}\r\n\r\n"
+                self.setHeaders({ "Content-Type": content_type, "Content-Length": len(content) })
+                res = f"{self.req.http_version} {self.getStatus()}\r\n{self.getHeaders()}\r\n"
                 self.socket.sendall(res.encode()+content)
                 self.socket.close()
                 self.sent = True
         except OSError:
             raise InternalServerError
+        
+    def redirect(self, url):
+        self.setHeaders({ "Location": url })
+        self.status(302)
+        self.message("Found")
+        self.send(f"Redirecting too... {url}")
             
     def render(self, template, **context):
 
@@ -102,16 +128,13 @@ class Response:
                 content = f.read()
                 f.close()
 
-                print(re.finditer(r"\{\{\s*(.*?)\s*\}\}", content))
                 def replacer(match):
-                    var = match.group(1)  
+                    var = match.group(1)
                     return str(context.get(var, f"{{{{ {var} }}}}"))
 
-                res = re.sub(r"\{\{\s*(.*?)\s*\}\}", replacer, content)
-                # res = re.sub(r"\{\{\s*(.*?)\s*\}\}", lambda m: str(context.get(v:=m.group(1), f"{{{{ {v} }}}}")), content)
+                res = re.sub(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}", replacer, content)
 
-
-                res = f"{self.req.http_version} {self.getStatus()}\r\nContent-Type: {content_type}\r\nContent-Length: {len(content)}\r\n\r\n{res}"
+                res = f"{self.req.http_version} {self.getStatus()}\r\nContent-Type: {content_type}\r\nContent-Length: {len(res)}\r\n\r\n{res}"
                 self.socket.sendall(res.encode())
                 self.socket.close()
                 self.sent = True

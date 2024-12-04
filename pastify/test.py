@@ -44,7 +44,20 @@ def xyz(req, res):
     
 @app.route(path="/te", allowed_methods=["GET"])
 def xyz(req, res):
-    res.render("sample.html", name="Tushar", pos=1, data='{"name":"tushar", "email": "hello"}')
+    res.render("sample.html", name="Tushar", pos=1, data={"name":"tushar", "email": "hello"}, data2=[1,3,4])
+
+    
+    
+@app.route(path="/head", allowed_methods=["GET"])
+def xyz(req, res):
+    res.send("ye headers testing ke liye hai")
+
+    
+    
+@app.route(path="/red", allowed_methods=["GET"])
+def xyz(req, res):
+    res.redirect("/te")
+    
     
 watcher = Watcher(app, __file__)
 
