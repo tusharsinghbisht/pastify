@@ -24,9 +24,9 @@ jobs:
         python-version: 3.9  # Specify the Python version
 
     - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
     # Build the package
     - name: Build package
