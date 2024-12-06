@@ -1,7 +1,7 @@
-from app.error import InternalServerError
-import json
+from pastify.app.error import InternalServerError
 from urllib.parse import parse_qs
-from email.parser import Parser
+import json
+# from email.parser import Parser
 
 def parseJSON(req, res):
     try:
@@ -16,8 +16,13 @@ def parseJSON(req, res):
             #         print(headers, body)
             #         # headers = Parser().parsestr(headers.decode("utf-8"))
             #         # content_disposition = headers.get("Content-Disposition", "")
-           
-            req.body = {key: value[0] if len(value) == 1 else value for key, value in parse_qs(req.body).items()}
+            if req.headers.get("Content-Type", None) == (_:="application/json") or req.headers.get("Content-type", None) == _:
+                req.json = json.loads(req.body)
+            else:
+                temp = {key: value[0] if len(value) == 1 else value for key, value in parse_qs(req.body).items()}
+                
+                if len(temp) != 0:
+                    req.body = temp
             
     except Exception as e:
         print(e)

@@ -25,3 +25,7 @@ class TemplateError(Exception):
     def __init__(self, message="Invalid template", status_code=404):
         super().__init__(message)
         self.status_code = status_code
+
+class SeverOverflowError(Exception):
+    def __init__(self):
+        super().__init__("Sever not optimized for this much of data")

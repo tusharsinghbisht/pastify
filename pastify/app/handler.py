@@ -1,20 +1,24 @@
 import socket
 from urllib.parse import unquote
 import json
-from .error import InternalServerError, FileNotExist, TemplateError
+from .error import InternalServerError, FileNotExist, TemplateError, SeverOverflowError
 import os
 import mimetypes
 import re
 
-BASE_URI = "./pastify"
-BASE_URI_TEMPLATE = "./pastify/templates"
+BASE_URI = "."
+BASE_URI_TEMPLATE = "./templates"
 
 class Request:
     def __init__(self, socket: socket.socket):
         self.socket = socket
-        self.data = socket.recv(1500).decode()
-        data_split = self.data.split("\r\n")
-        self.headers = data_split[0:data_split.index('')]
+        try:
+            self.data = socket.recv(5000000).decode()
+            data_split = self.data.split("\r\n")
+            self.headers = data_split[0:data_split.index('')]
+        except:
+            raise SeverOverflowError
+
         self.method, self.url, self.http_version = self.headers[0].split()
         self.url = unquote(self.url)
         self.base_url = self.url.split("?")[0]
@@ -80,6 +84,7 @@ class Response:
         return headers_str
 
     def send(self, text: str):
+        text = str(text)
         self.setHeaders({ "Content-Length": len(text) })
         self.socket.sendall(f'{self.req.http_version} {self.getStatus()}\n{self.getHeaders()}\n{text}'.encode())
         self.socket.close()
@@ -97,7 +102,8 @@ class Response:
 
     def fsend(self, fname):
         try:
-            file_path = os.path.join(BASE_URI, fname)
+            file_path = os.path.join(os.getcwd(), fname)
+            print(file_path)
 
             if not os.path.isfile(file_path):
                 raise FileNotExist
@@ -129,10 +135,12 @@ class Response:
             file_path = os.path.join(BASE_URI_TEMPLATE, template)
 
             if not os.path.isfile(file_path):
+                print(f"Template {template} not found")
                 raise TemplateError("Template not found", 404)
             else:
                 content_type, _ = mimetypes.guess_type(file_path)
                 if content_type != "text/html":
+                    print("Invalid template")
                     raise TemplateError("Invalid template type", 415)
 
                 

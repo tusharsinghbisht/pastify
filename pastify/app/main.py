@@ -2,7 +2,7 @@ import socket
 from .defaults import *
 from .handler import Request, Response
 from .error import *
-from utils.message import message
+from pastify.utils.message import message
 from functools import wraps
 from .RESPONSES import *
 from .router import Router
@@ -139,7 +139,7 @@ class Pastify:
 
         except KeyboardInterrupt:
             print("Server Stopped by user..")
-        except OSError:
+        except (OSError, SeverOverflowError):
             pass
 
 
@@ -154,7 +154,7 @@ class Pastify:
             # loop.start()
         # print("shut down triggerd")
 
-    def useStatic(self, route="/static", directory="public"):
+    def useStatic(self, directory, route="/static",):
         if route == "/":
             route = ""
 

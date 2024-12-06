@@ -1,10 +1,8 @@
 import os
 import time
-from app import Pastify
+from pastify.app import Pastify
 import threading
-from utils import message
-
-BASE = "./pastify"
+from pastify.utils import message
 
 class Watcher:
     def __init__(self, app: Pastify, file):
@@ -25,7 +23,7 @@ class Watcher:
         return files
             
     
-    def watch(self, dir=".", interval=1):
+    def watch(self, dir, interval=1):
         last_mtime = { f: os.path.getmtime(f) for f in self.get_all_files(dir) }
         while self.watching:
             for file in last_mtime.keys():
@@ -42,7 +40,7 @@ class Watcher:
     def listen(self, callback):
         try:
             self.server = threading.Thread(target=self.app.listen, args=(callback,))
-            self.watcher = threading.Thread(target=self.watch, args=(BASE,))
+            self.watcher = threading.Thread(target=self.watch, args=(os.getcwd(),))
 
             message.green("Starting app in watch mode... Listening to changes...")
 
