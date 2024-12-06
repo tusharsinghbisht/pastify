@@ -1,3 +1,7 @@
+'''
+Basic Default templates for some particular type of responses
+'''
+
 
 INTERNAL_SERVER_ERROR_PAGE = """
 <html><head><title>500 Internal Server Error</title></head><body><h1>500 Internal Server Error</h1><p>Oops! Something went wrong on our server.</p></body></html>

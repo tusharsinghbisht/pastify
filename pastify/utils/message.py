@@ -8,6 +8,7 @@ PINK = '\033[95m'
 CYAN = '\033[96m'
 
 class message:
+    '''Class for printing colored messages as output'''
     @staticmethod
     def blue(s):
         print(BLUE+s+ENDC) 

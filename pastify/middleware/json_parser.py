@@ -1,9 +1,9 @@
 from pastify.app.error import InternalServerError
 from urllib.parse import parse_qs
 import json
-# from email.parser import Parser
 
 def parseJSON(req, res):
+    '''Basic middleware for parsing request body to JSON format'''
     try:
         if req.body.strip() != "":
             # seprator = req.body.split("\r\n")[0]

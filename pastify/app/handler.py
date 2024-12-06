@@ -10,6 +10,12 @@ BASE_URI = "."
 BASE_URI_TEMPLATE = "./templates"
 
 class Request:
+    '''
+    Request class containing request data such as cookies, boy, headers, query, params etc.
+
+    ### Parameters
+        - `socket (socket)`: socket object that will be used to received data from client
+    '''
     def __init__(self, socket: socket.socket):
         self.socket = socket
         try:
@@ -46,6 +52,12 @@ class Request:
     
 
 class Response:
+    '''
+    Response class used to send responses
+
+    ### Parameters
+        - `req (Request)`: takes a Request object as parameter to process it and send response
+    '''
     def __init__(self, req: Request):
         self.socket = req.socket
         self.req = req
@@ -57,12 +69,19 @@ class Response:
         }
         self.cookies = {}
 
-    def status(self, code):
-        self.status_code = code
+    def status(self, code:int):
+        '''Updating status_code for response'''
+        if isinstance(code, int):
+            self.status_code = code
+        else:
+            print("Invalid value for status code")
+            raise InternalServerError("Inavlid status code")
     def message(self, message):
+        '''Updating response message'''
         self.status_message = message
 
     def setHeaders(self, hdrs):
+        '''Setting up headers using dictionary of headers'''
         if isinstance(hdrs, dict):
             for k, v in hdrs.items():
                 self.headers[k] = v
@@ -70,20 +89,24 @@ class Response:
             raise InternalServerError("Invalid values for headers")
         
     def setCookie(self, key, value, max_age, path="/", http_only=True, secure=False, samesite="Strict"):
+        '''Setting up a cookie'''
         http_only_text = "httponly;" if http_only else ""
         secure_text = "secure;" if secure else ""
         self.headers["Set-Cookie"] = f"{key}={value}; Max-Age={max_age}; path={path}; {http_only_text} {secure_text} SameSite={samesite}"
 
     def getStatus(self):
+        '''Get status for sending response'''
         return f"{self.status_code} {self.status_message}"
     
     def getHeaders(self):
+        '''Get headers for sending response'''
         headers_str = ""
         for k, v in self.headers.items():
             headers_str += f"{k}: {v}\n"
         return headers_str
 
     def send(self, text: str):
+        '''Used for sending text response'''
         text = str(text)
         self.setHeaders({ "Content-Length": len(text) })
         self.socket.sendall(f'{self.req.http_version} {self.getStatus()}\n{self.getHeaders()}\n{text}'.encode())
@@ -91,6 +114,7 @@ class Response:
         self.sent = True
 
     def json(self, dic):
+        '''Used for sending json response'''
         try:
             json_res = json.dumps(dic)
             self.setHeaders({ "Content-Type": "application/json", "Content-Length": len(json_res) })
@@ -101,6 +125,7 @@ class Response:
             raise InternalServerError("Invalid JSON response")
 
     def fsend(self, fname):
+        '''Used for sending file as response'''
         try:
             file_path = os.path.join(os.getcwd(), fname)
             print(file_path)
@@ -124,13 +149,14 @@ class Response:
             raise InternalServerError
         
     def redirect(self, url):
+        '''Used for sending a redirect response to another `url`'''
         self.setHeaders({ "Location": url })
         self.status(302)
         self.message("Found")
         self.send(f"Redirecting too... {url}")
             
     def render(self, template, **context):
-
+        '''Used to send a dynamic template as response'''
         try:
             file_path = os.path.join(BASE_URI_TEMPLATE, template)
 

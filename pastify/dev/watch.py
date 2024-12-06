@@ -5,12 +5,23 @@ import threading
 from pastify.utils import message
 
 class Watcher:
+    '''
+    Watcher class that can run the pastify server in `watch mode`
+
+    ## Watch Mode
+    Check's for all files in current directory and performs hot reloads based on changes, basically detects changes and restart the server upon those changes
+
+    ### Parameters: 
+        - `app (Pastify)`: pastify app on which watch mode is to be implemented
+        -  `file`: file object (__file__) of the file in which our `app` is initialized
+    '''
     def __init__(self, app: Pastify, file):
         self.app = app
         self.watching = True
         self.file = file
 
     def get_all_files(self, dir):
+        '''Get all files recursively from a directory'''
         files = []
         dir_list = [os.path.join(dir, x) for x in os.listdir(dir)]
 
@@ -24,6 +35,7 @@ class Watcher:
             
     
     def watch(self, dir, interval=1):
+        '''Watches all the files in the present working directory for changes'''
         last_mtime = { f: os.path.getmtime(f) for f in self.get_all_files(dir) }
         while self.watching:
             for file in last_mtime.keys():
@@ -38,6 +50,9 @@ class Watcher:
 
     
     def listen(self, callback):
+        '''
+        Listens to server in `watch mode`, keeping checks on file changes and running server concurrently
+        '''
         try:
             self.server = threading.Thread(target=self.app.listen, args=(callback,))
             self.watcher = threading.Thread(target=self.watch, args=(os.getcwd(),))
@@ -65,5 +80,6 @@ class Watcher:
 
 
     def restart(self):
+        '''Restart the entire program'''
         self.watching = False
         self.app.shutdown()
