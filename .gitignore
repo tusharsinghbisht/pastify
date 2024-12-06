@@ -5,3 +5,4 @@ __pycache__/
 temp
 build
 dist
+patify.egg-info
