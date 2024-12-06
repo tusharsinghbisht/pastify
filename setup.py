@@ -4,7 +4,7 @@ setup(
     name="pastify",  
     version="0.1.0",
     author="Tushar Singh Bisht",
-    author_email="aabisht2006@.com",
+    author_email="aabisht2006@gmail.com",
     description="Pastify is a minimalistic clone of web dev frameworks like flask and express for creating web servers, having all the essential features of a webD framework",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
