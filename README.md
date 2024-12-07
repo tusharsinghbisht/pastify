@@ -49,6 +49,7 @@ app = Pastify('0.0.0.0', 3000)
 ```
 
 
+
 #### Starting server in watch mode for development
 
 ```python
@@ -93,10 +94,6 @@ watcher.listen(lambda status, message: print(message))
 
 ```
 
-```
-
-```
-
 #### Serving static files
 
 ```python
@@ -116,7 +113,31 @@ watcher = Watcher(app, __file__)
 watcher.listen(lambda status, message: print(message))
 ```
 
+#### Giving JSON response
 
+```python
+from pastify.app import Pastify
+from pastify.dev import Watcher
+
+app = Pastify()
+
+@app.route("/user/getData", allowed_methods=["GET"])
+def getUserData(req, res):
+    ## dynamically fetch data from database ##
+
+    # sending json response with res.json, while res.send helps sending text response
+    res.json({
+        "id": "31",
+        "name": "Tushar",
+        "age": 18,
+        "college": "DTU"
+    })
+
+watcher = Watcher(app, __file__)
+watcher.listen(lambda status, message: print(message))
+
+
+```
 
 #### Middlewares : Global and route specific
 
@@ -216,7 +237,7 @@ from pastify.dev import Watcher
 app = Pastify()
 
 @app.route("/", allowed_methods=["GET"])
-def home(req: Request, res: Response):
+def home(req, res):
     res.status(201) # to set response status (by default: 200)
     res.message("NOT OK") # to set response message (by default: OK)
     res.setHeaders({ "X-Custom-Header": "a_Random_val" }) # to set/modify headers
@@ -290,7 +311,7 @@ watcher.listen(lambda status, message: print(message))
 #### Defining sub-routes with same parent route
 
 ```python
-from pastify.app import Pastify, Router
+from pastify.app import Pastify
 from pastify.dev import Watcher
 
 app = Pastify()
@@ -300,21 +321,10 @@ def home(req, res):
     res.send("Home page....")
 
 
+from routes.pageRoutes import pageRouter
 
-# all routes defined with pageRouter are automatically prefixed with /page
-def page_middleware(req, res):
-    print("middleware only for /page routes")
-
-pageRouter = Router("/page", middlewares=[page_middleware])
-
-@pageRouter.route("/about", allowed_methods=["GET"]) # points to /page/about
-def about(req, res):
-    res.send("this is about page")
-
-@pageRouter.route("/blog", allowed_methods=["GET"], middlewares=[lambda req, res: print("middlware for /page/blog route")]) # points to /page/about
-def about(req, res):
-    res.send("this is blog page")
-
+app.useRouter(pageRouter) # use page router
+## more such routers can be added ##
 
 watcher = Watcher(app, __file__)
 watcher.listen(lambda status, message: print(message))
@@ -322,7 +332,36 @@ watcher.listen(lambda status, message: print(message))
 ```
 
 
-That' covers all major feaures of pastify, that can help you to create your own web app :)
+```python
+# routes/pages.py
+
+# all routes defined with pageRouter are prefixed with /page
+
+from pastify.app import Router
+
+def page_middleware(req, res):
+    print("middleware only for /page routes") # prints before every route prefixed with /page
+
+pageRouter = Router("/page", middlewares=[page_middleware])
+
+
+@pageRouter.route("/about", allowed_methods=["GET"]) # points to /page/about
+def about(req, res):
+    res.send("this is about page")
+
+@pageRouter.route("/blog", allowed_methods=["GET"], 
+middlewares=[lambda req, res: print("middlware for /page/blog route")]) # points to /page/about
+def about(req, res):
+    res.send("this is blog page")
+
+```
+
+
+---
+
+
+
+That' covers all major feaures of **pastify**, that can help you to create your own web app :)
 
 Thankyou,
 Feel free to raise an issue and contacting me

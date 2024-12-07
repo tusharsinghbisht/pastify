@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pastify",  
-    version="0.1.0",
+    version="0.1.1",
     author="Tushar Singh Bisht",
     author_email="aabisht2006@gmail.com",
     description="Pastify is a minimalistic clone of web dev frameworks like flask and express for creating web servers, having all the essential features of a webD framework",
