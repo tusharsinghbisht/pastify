@@ -24,7 +24,6 @@ Install the module to use it:
 pip install pastify
 ```
 
-
 ## Working with pastify
 
 #### Creating a simple web server
@@ -48,8 +47,6 @@ app.listen(lambda status, message: print(message))
 app = Pastify('0.0.0.0', 3000)
 ```
 
-
-
 #### Starting server in watch mode for development
 
 ```python
@@ -65,7 +62,6 @@ def home(req, res):
 watcher = Watcher(app, __file__)
 watcher.listen(lambda status, message: print(message))
 ```
-
 
 #### Defining more routes
 
@@ -100,10 +96,11 @@ watcher.listen(lambda status, message: print(message))
 from pastify.app import Pastify
 from pastify.dev import Watcher
 
+app = Pastify()
+
 # binds all files of ./public directory to /static route
 app.useStatic("./public", "/static") 
 
-app = Pastify()
 @app.route("/", allowed_methods=["GET"])
 def home(req, res):
     res.send("Home page...")
@@ -226,8 +223,6 @@ watcher = Watcher(app, __file__)
 watcher.listen(lambda status, message: print(message))
 ```
 
-
-
 #### Setting response status, headers and cookie
 
 ```python
@@ -331,7 +326,6 @@ watcher.listen(lambda status, message: print(message))
 
 ```
 
-
 ```python
 # routes/pages.py
 
@@ -356,10 +350,7 @@ def about(req, res):
 
 ```
 
-
 ---
-
-
 
 That' covers all major feaures of **pastify**, that can help you to create your own web app :)
 

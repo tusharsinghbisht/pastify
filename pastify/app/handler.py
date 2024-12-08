@@ -128,8 +128,6 @@ class Response:
         '''Used for sending file as response'''
         try:
             file_path = os.path.join(os.getcwd(), fname)
-            print(file_path)
-
             if not os.path.isfile(file_path):
                 raise FileNotExist
             else:
